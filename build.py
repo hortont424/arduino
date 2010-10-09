@@ -11,6 +11,13 @@ class ConfigurationException(Exception):
     def __str(self):
         return "ConfigurationError: {0}".format(self.problem)
 
+class BuildException(Exception):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __str(self):
+        return "BuildException: {0}".format(self.filename)
+
 def loadConfiguration():
     def findArduino():
         paths = ["/Applications/Arduino.app/Contents/Resources/Java"]
@@ -32,6 +39,7 @@ def loadConfiguration():
 
 def buildProject(cppSources, config, libraries=None):
     cSources = []
+    cppSources.append("support.cpp")
 
     corePath = os.path.join(config["ARDUINO_PATH"], "hardware", "arduino", "cores", "arduino")
     libsPath = os.path.join(config["ARDUINO_PATH"], "libraries")
@@ -46,6 +54,7 @@ def buildProject(cppSources, config, libraries=None):
     buildFlags.append("-DF_CPU={0}".format(config["CPU_FREQUENCY"]))
     buildFlags.append("-Os")
     buildFlags.append("-mmcu={0}".format(config["CPU"]))
+    buildFlags.append("-w")
 
     cBuildFlags = buildFlags[:]
     cppBuildFlags = buildFlags[:]
@@ -59,14 +68,27 @@ def buildProject(cppSources, config, libraries=None):
 
     ldBuildFlags = ["-lm"]
 
-    for path, dirs, files in os.walk(corePath):
-        for filename in [os.path.abspath(os.path.join(path, filename)) for filename in files]:
-            if filename.endswith(".cpp"):
-                cppSources.append(filename)
-            elif filename.endswith(".c"):
-                cSources.append(filename)
+    for basePath in [corePath] + [os.path.join(libsPath, library) for library in libraries]:
+        for path, dirs, files in os.walk(basePath):
+            for filename in [os.path.abspath(os.path.join(path, filename)) for filename in files]:
+                if filename.endswith(".cpp"):
+                    if filename.endswith("Tone.cpp"):
+                        continue
+                    cppSources.append(filename)
+                elif filename.endswith(".c"):
+                    cSources.append(filename)
 
     for src in cSources:
-        os.system("avr-gcc -c {0} {1} -o {2}".format(" ".join(cBuildFlags), src, src.replace(".c", ".o")))
+        if(os.system("avr-gcc -c {0} {1} -o {2}".format(" ".join(cBuildFlags), src,
+                                                        os.path.basename(src).replace(".c", ".o")))):
+            raise BuildException(src)
 
-buildProject(["binary-counter.pde"], loadConfiguration(), libraries=["SPI"])
+    for src in cppSources:
+        if(os.system("avr-g++ -c {0} {1} -o {2}".format(" ".join(cppBuildFlags), src,
+                                                        os.path.basename(src).replace(".cpp", ".o")))):
+            raise BuildException(src)
+
+    if(os.system("avr-g++ {0} *.o -o out.elf".format(" ".join(cBuildFlags)))):
+        raise BuildException("linking")
+
+buildProject(["binary-counter.cpp"], loadConfiguration(), libraries=["SPI"])
