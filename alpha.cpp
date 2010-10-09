@@ -64,34 +64,53 @@ void setup()
     digitalWrite(SLAVESELECT, HIGH);
 }
 
+unsigned char * getCharacter(unsigned char c)
+{
+    if(c == ' ')
+        return space;
+    else
+        return uppercase[c - 'A'];
+}
+
 unsigned char characterNumber = 0;
 char * str = "HELLOMATTMAP";
+unsigned char initialShift = 0;
 
 void loop()
 {
     while(1)
     {
-        unsigned char id = str[characterNumber] - 'A';
+        unsigned char aid = str[characterNumber] - 'A';
+        unsigned char bid = str[characterNumber + 1] - 'A';
 
         for(int i = 0; i < 8; i++)
         {
-            unsigned char v = uppercase[id][i];
+            unsigned char av = uppercase[aid][i] << initialShift;
+            unsigned char bv = uppercase[bid][i] >> (8 - initialShift);
 
             for(int j = 0; j < 8; j++)
             {
-                color_buffer[(8 * i) + j] = (v & 0x01) * 0xE0;
-                v >>= 1;
+                color_buffer[(8 * i) + j] = ((av & 0x01) * 0xE0) + ((bv & 0x01) * 0x0F);
+                av >>= 1;
+                bv >>= 1;
             }
         }
 
-        if(++characterNumber > strlen(str) - 1)
-            characterNumber = 0;
+        if(++initialShift > 7)
+        {
+            if(++characterNumber > strlen(str) - 2)
+            {
+                characterNumber = 0;
+            }
+
+            initialShift = 0;
+        }
 
         digitalWrite(SLAVESELECT, LOW);
         for(int LED=0; LED<64; LED++)
             SPI.transfer(color_buffer[LED]);
         digitalWrite(SLAVESELECT, HIGH);
 
-        delay(500);
+        delay(100);
     }
 }
