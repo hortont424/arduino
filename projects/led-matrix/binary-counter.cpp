@@ -1,3 +1,5 @@
+// NEEDS SPI
+
 #include "WProgram.h"
 #include <SPI.h>
 

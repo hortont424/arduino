@@ -47,11 +47,18 @@ def loadConfiguration():
 
     return config
 
-def buildProject(progSources, config, libraries=None):
+def buildProject(progSources, config, libraries=[]):
     cSources = []
     cppSources = []
 
-    mkdir_p("out")
+    os.system("rm -rf .build")
+    mkdir_p(".build")
+
+    for src in progSources:
+        libsLine = readFile(src).splitlines()[0].split()
+        if libsLine[0] == "//" and libsLine[1] == "NEEDS":
+            for lib in libsLine[2:]:
+                libraries.append(lib)
 
     progSources.append("support.cpp")
 
@@ -104,24 +111,24 @@ def buildProject(progSources, config, libraries=None):
     for src in cSources:
         obj = os.path.basename(src).replace(".c", ".o")
         objects.append(obj)
-        if(os.system("avr-gcc -c {0} {1} -o out/{2}".format(" ".join(cBuildFlags), src, obj))):
+        if(os.system("avr-gcc -c {0} {1} -o .build/{2}".format(" ".join(cBuildFlags), src, obj))):
             raise BuildException(src)
 
     for src in cppSources:
         obj = os.path.basename(src).replace(".cpp", ".o")
         objects.append(obj)
-        if(os.system("avr-g++ -c {0} {1} -o out/{2}".format(" ".join(cppBuildFlags), src, obj))):
+        if(os.system("avr-g++ -c {0} {1} -o .build/{2}".format(" ".join(cppBuildFlags), src, obj))):
             raise BuildException(src)
 
     for src in objects:
-        os.system("avr-ar rcs out/core.a out/{0}".format(src))
+        os.system("avr-ar rcs .build/core.a .build/{0}".format(src))
 
-    if(os.system("avr-g++ -lm {0} {1} out/core.a -o out/out.elf".format(" ".join(cppBuildFlags), " ".join(progSources)))):
+    if(os.system("avr-g++ -lm {0} {1} .build/core.a -o .build/out.elf".format(" ".join(cppBuildFlags), " ".join(progSources)))):
         raise BuildException("linking")
 
-    os.system("avr-objcopy -O ihex -R .eeprom out/out.elf out/out.hex")
+    os.system("avr-objcopy -O ihex -R .eeprom .build/out.elf .build/out.hex")
 
     pulseDTR(config["SERIAL_PORT"])
-    os.system("{0} {1} -U flash:w:out/out.hex".format(avrDudePath, " ".join(avrDudeFlags)))
+    os.system("{0} {1} -U flash:w:.build/out.hex".format(avrDudePath, " ".join(avrDudeFlags)))
 
-buildProject([sys.argv[1]], loadConfiguration(), libraries=["SPI"])
+buildProject([sys.argv[1]], loadConfiguration())
