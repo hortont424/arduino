@@ -48,18 +48,18 @@ void loop()
 
     for(int i = 0; i < 64; i++)
     {
-      /*do
+      do
       {
-        color_buffer[i] = random(2) * 0xE0;
+        color_buffer[i] = random(255);
       }
-      while(color_buffer[i] == '%');*/
+      while(color_buffer[i] == '%');
 
-      if(temp & 0x01)
+      /*if(temp & 0x01)
         color_buffer[i] = 0xE0;
       else
         color_buffer[i] = 0x00;
 
-      temp = temp >> 1;
+      temp = temp >> 1;*/
     }
 
     //Activate the RGB Matrix

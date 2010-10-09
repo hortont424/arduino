@@ -2,3 +2,6 @@ build/
 .DS_Store
 *.pyc
 *.o
+*.elf
+*.hex
+core.a
