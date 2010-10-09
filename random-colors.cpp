@@ -6,7 +6,6 @@
 #define SPICLOCK 13 // SCLK
 #define SLAVESELECT 10 // CS
 
-unsigned long num = 0;
 char color_buffer[64];
 
 void setup()
@@ -36,16 +35,13 @@ void setup()
 
 void loop()
 {
-    unsigned long temp = num++;
-
     for(int i = 0; i < 64; i++)
     {
-        if(temp & 0x01)
-            color_buffer[i] = 0xE0;
-        else
-            color_buffer[i] = 0x00;
-
-        temp = temp >> 1;
+        do
+        {
+            color_buffer[i] = random(255);
+        }
+        while(color_buffer[i] == '%');
     }
 
     digitalWrite(SLAVESELECT, LOW);
