@@ -30,19 +30,43 @@ def loadConfiguration():
 
     return config
 
-def buildProject(sources, config, libraries=None):
-    sources = " ".join(sources)
+def buildProject(cppSources, config, libraries=None):
+    cSources = []
 
     corePath = os.path.join(config["ARDUINO_PATH"], "hardware", "arduino", "cores", "arduino")
     libsPath = os.path.join(config["ARDUINO_PATH"], "libraries")
     downloaderPath = os.path.join(config["ARDUINO_PATH"], "hardware", "tools", "avr")
 
-    includeFlags = "-I{0}".format(corePath)
+    includeFlags = "-I. -I{0}".format(corePath)
 
     for library in libraries:
         includeFlags += " -I{0}".format(os.path.join(libsPath, library))
 
-    print corePath
-    print includeFlags
+    buildFlags = [includeFlags]
+    buildFlags.append("-DF_CPU={0}".format(config["CPU_FREQUENCY"]))
+    buildFlags.append("-Os")
+    buildFlags.append("-mmcu={0}".format(config["CPU"]))
+
+    cBuildFlags = buildFlags[:]
+    cppBuildFlags = buildFlags[:]
+    asBuildFlags = buildFlags[:]
+
+    cBuildFlags.append("-std=gnu99")
+    cBuildFlags.append("-gstabs")
+    cBuildFlags.append("-funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums")
+
+    asBuildFlags.append("-x assembler-with-cpp")
+
+    ldBuildFlags = ["-lm"]
+
+    for path, dirs, files in os.walk(corePath):
+        for filename in [os.path.abspath(os.path.join(path, filename)) for filename in files]:
+            if filename.endswith(".cpp"):
+                cppSources.append(filename)
+            elif filename.endswith(".c"):
+                cSources.append(filename)
+
+    for src in cSources:
+        os.system("avr-gcc -c {0} {1} -o {2}".format(" ".join(cBuildFlags), src, src.replace(".c", ".o")))
 
 buildProject(["binary-counter.pde"], loadConfiguration(), libraries=["SPI"])
