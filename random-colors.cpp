@@ -28,7 +28,7 @@ void setup()
     digitalWrite(SLAVESELECT, LOW);
     delay(10);
     SPI.transfer('%');
-    SPI.transfer('1');
+    SPI.transfer(1);
     delay(10);
     digitalWrite(SLAVESELECT, HIGH);
 }

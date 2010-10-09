@@ -59,36 +59,39 @@ void setup()
     digitalWrite(SLAVESELECT, LOW);
     delay(10);
     SPI.transfer('%');
-    SPI.transfer('1');
+    SPI.transfer(1);
     delay(10);
     digitalWrite(SLAVESELECT, HIGH);
 }
 
 unsigned char characterNumber = 0;
-char * str = "HELLO";
+char * str = "HELLOMATTMAP";
 
 void loop()
 {
-    char id = str[characterNumber] - 'A';
-
-    for(int i = 0; i < 8; i++)
+    while(1)
     {
-        unsigned char v = uppercase[id][i];
+        unsigned char id = str[characterNumber] - 'A';
 
-        for(int j = 0; j < 8; j++)
+        for(int i = 0; i < 8; i++)
         {
-            color_buffer[(8 * i) + j] = (v & 0x01) * 0xE0;
-            v >>= 1;
+            unsigned char v = uppercase[id][i];
+
+            for(int j = 0; j < 8; j++)
+            {
+                color_buffer[(8 * i) + j] = (v & 0x01) * 0xE0;
+                v >>= 1;
+            }
         }
+
+        if(++characterNumber > strlen(str) - 1)
+            characterNumber = 0;
+
+        digitalWrite(SLAVESELECT, LOW);
+        for(int LED=0; LED<64; LED++)
+            SPI.transfer(color_buffer[LED]);
+        digitalWrite(SLAVESELECT, HIGH);
+
+        delay(500);
     }
-
-    if(++characterNumber > 4)
-        characterNumber = 0;
-
-    digitalWrite(SLAVESELECT, LOW);
-    for(int LED=0; LED<64; LED++)
-        SPI.transfer(color_buffer[LED]);
-    digitalWrite(SLAVESELECT, HIGH);
-
-    delay(500);
 }
