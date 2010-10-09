@@ -1,3 +1,5 @@
+import os
+import errno
 import codecs
 
 def writeFile(filename, contents):
@@ -10,3 +12,11 @@ def readFile(filename):
     fileContents = unicode(fileHandle.read())
     fileHandle.close()
     return fileContents
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST:
+            pass
+        else: raise

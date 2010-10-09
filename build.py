@@ -51,6 +51,8 @@ def buildProject(progSources, config, libraries=None):
     cSources = []
     cppSources = []
 
+    mkdir_p("out")
+
     progSources.append("support.cpp")
 
     corePath = os.path.join(config["ARDUINO_PATH"], "hardware", "arduino", "cores", "arduino")
@@ -67,7 +69,7 @@ def buildProject(progSources, config, libraries=None):
     buildFlags.append("-DF_CPU={0}".format(config["CPU_FREQUENCY"]))
     buildFlags.append("-Os")
     buildFlags.append("-mmcu={0}".format(config["CPU"]))
-    #buildFlags.append("-w")
+    buildFlags.append("-w")
 
     cBuildFlags = buildFlags[:]
     cppBuildFlags = buildFlags[:]
@@ -102,24 +104,24 @@ def buildProject(progSources, config, libraries=None):
     for src in cSources:
         obj = os.path.basename(src).replace(".c", ".o")
         objects.append(obj)
-        if(os.system("avr-gcc -c {0} {1} -o {2}".format(" ".join(cBuildFlags), src, obj))):
+        if(os.system("avr-gcc -c {0} {1} -o out/{2}".format(" ".join(cBuildFlags), src, obj))):
             raise BuildException(src)
 
     for src in cppSources:
         obj = os.path.basename(src).replace(".cpp", ".o")
         objects.append(obj)
-        if(os.system("avr-g++ -c {0} {1} -o {2}".format(" ".join(cppBuildFlags), src, obj))):
+        if(os.system("avr-g++ -c {0} {1} -o out/{2}".format(" ".join(cppBuildFlags), src, obj))):
             raise BuildException(src)
 
     for src in objects:
-        os.system("avr-ar rcs core.a {0}".format(src))
+        os.system("avr-ar rcs out/core.a out/{0}".format(src))
 
-    if(os.system("avr-g++ -lm {0} {1} core.a -o out.elf".format(" ".join(cppBuildFlags), " ".join(progSources)))):
+    if(os.system("avr-g++ -lm {0} {1} out/core.a -o out/out.elf".format(" ".join(cppBuildFlags), " ".join(progSources)))):
         raise BuildException("linking")
 
-    os.system("avr-objcopy -O ihex -R .eeprom out.elf out.hex")
+    os.system("avr-objcopy -O ihex -R .eeprom out/out.elf out/out.hex")
 
     pulseDTR(config["SERIAL_PORT"])
-    os.system("{0} {1} -U flash:w:out.hex".format(avrDudePath, " ".join(avrDudeFlags)))
+    os.system("{0} {1} -U flash:w:out/out.hex".format(avrDudePath, " ".join(avrDudeFlags)))
 
-buildProject(["binary-counter.cpp"], loadConfiguration(), libraries=["SPI"])
+buildProject([sys.argv[1]], loadConfiguration(), libraries=["SPI"])

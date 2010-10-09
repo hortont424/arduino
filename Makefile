@@ -1,11 +1,8 @@
 .PHONY: all clean
 
 all:
-	python ./build.py
+	python ./build.py random-colors.cpp
 
 clean:
-	rm -rf *.o
+	rm -rf out/
 	rm -rf *.pyc
-	rm -rf *.elf
-	rm -rf *.hex
-	rm -rf *.a
