@@ -397,7 +397,7 @@ void loop()
 
     flushBuffer();
 
-    delay(120);
+    delay(analogRead(0) / 10);
     
     frame++;
 }
