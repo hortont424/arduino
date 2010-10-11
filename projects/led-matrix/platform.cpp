@@ -57,6 +57,7 @@ void setup()
     pinMode(SLAVESELECT, OUTPUT);
 
     pinMode(2, INPUT);
+    pinMode(4, INPUT);
     attachInterrupt(1, buttonJump, FALLING);
 
     // Make sure the RGB matrix is deactivated
@@ -238,6 +239,14 @@ void attemptMoveForward()
     }
 }
 
+void attemptMoveBackwards()
+{
+    if((findTop(player.x - 1) - (player.y) < 0) && player.x != 0)
+    {
+        player.x--;
+    }
+}
+
 void attemptJump()
 {
     char top = findTop(player.x);
@@ -385,6 +394,10 @@ void loop()
     if(digitalRead(2) == LOW)
     {
         attemptMoveForward();
+    }
+    else if(digitalRead(4) == LOW)
+    {
+        attemptMoveBackwards();
     }
 
     updatePlayerPosition();
