@@ -214,10 +214,12 @@ void drawEnvironment()
     {
         unsigned char env = environment[y];
         unsigned char cloud = clouds[y];
+        
+        unsigned char envColor = (y + 1) << 2;
 
         for(int x = 0; x < 8; x++)
         {
-            color_buffer[x][y] = (0x01 & env) ? 0x04 : ((0x01 & cloud) ? 0xFF : 0x00);
+            color_buffer[x][y] = (0x01 & env) ? envColor : ((0x01 & cloud) ? 0xFF : 0x00);
             env >>= 1;
             cloud >>= 1;
         }
