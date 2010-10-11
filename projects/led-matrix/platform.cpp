@@ -35,6 +35,8 @@ typedef struct
 
 _coin coins[4];
 
+char coinCount;
+
 void buttonJump()
 {
     jumpFlag = true;
@@ -86,6 +88,8 @@ void setupMap()
 
     jumpFlag = false;
     jumping = 0;
+    
+    coinCount = 0;
 
     for(int i = 0; i < 4; i++)
     {
@@ -151,19 +155,6 @@ char findTop(unsigned char x)
     }
 
     return -1;
-}
-
-int aliveCoinCount()
-{
-    char aliveCoins = 0;
-    
-    for(int i = 0; i < 4; i++)
-    {
-        if(coins[i].alive)
-            aliveCoins++;
-    }
-    
-    return aliveCoins;
 }
 
 void addRandomCoin(char x)
@@ -251,6 +242,32 @@ void attemptJump()
     }
 }
 
+void showCoinCount()
+{
+    char tempCoinCount = coinCount;
+    
+    if(!tempCoinCount)
+        return;
+
+    for(int y = 0; y < 8; y++)
+    {
+        for(int x = 0; x < 8; x++)
+        {
+            if(tempCoinCount)
+                color_buffer[x][y] = 0xFC;
+                
+            if(!tempCoinCount--)
+                goto doneDrawingCoins;
+        }
+    }
+        
+    doneDrawingCoins:
+    
+    flushBuffer();
+    
+    delay(1000);
+}
+
 void deathSequence()
 {
     for(int y = 0; y < 8; y++)
@@ -303,6 +320,8 @@ void deathSequence()
         flushBuffer();
         delay(50);
     }
+    
+    showCoinCount();
 }
 
 void updatePlayerPosition()
@@ -343,7 +362,7 @@ void collectCoins()
         if(coins[i].x == player.x && coins[i].y == player.y)
         {
             // got a coin!!
-            
+            coinCount++;
             coins[i].alive = false;
         }
     }
