@@ -10,6 +10,8 @@
 
 char findTop(unsigned char x);
 void setupMap();
+void attemptMoveForward();
+void attemptJump();
 
 unsigned char timeSinceGap = 0;
 char jumping = 0;
@@ -34,8 +36,16 @@ void setup()
     // Set the pin modes for the RGB matrix
     pinMode(DATAOUT, OUTPUT);
     pinMode(DATAIN, INPUT);
-    pinMode(SPICLOCK,OUTPUT);
-    pinMode(SLAVESELECT,OUTPUT);
+    pinMode(SPICLOCK, OUTPUT);
+    pinMode(SLAVESELECT, OUTPUT);
+
+    pinMode(2, INPUT);
+    digitalWrite(2, LOW);
+    //attachInterrupt(0, attemptMoveForward, FALLING);
+
+    pinMode(3, INPUT);
+    digitalWrite(3, LOW);
+    //attachInterrupt(1, attemptJump, FALLING);
 
     // Make sure the RGB matrix is deactivated
     digitalWrite(SLAVESELECT,HIGH);
@@ -150,12 +160,16 @@ void attemptMoveForward()
     if(findTop(player.x + 1) - (player.y) < 0)
     {
         player.x++;
+    }
+}
 
-        if(player.x > 3)
-        {
-            player.x = 3;
-            shiftWorldRight();
-        }
+void attemptJump()
+{
+    char top = findTop(player.x);
+
+    if(random(10) == 0 && jumping == 0 && (player.y == top + 1))
+    {
+        jumping = 3;
     }
 }
 
@@ -217,7 +231,13 @@ void updatePlayerPosition()
 {
     //update locations
 
-    attemptMoveForward();
+    //attemptMoveForward();
+
+    if(player.x > 3)
+    {
+        player.x = 3;
+        shiftWorldRight();
+    }
 
     player.y += (jumping ? 1 : -1);
 
@@ -236,14 +256,16 @@ void updatePlayerPosition()
         setupMap();
     }
 
-    if(random(10) == 0 && jumping == 0 && (player.y == top + 1))
-    {
-        jumping = 3;
-    }
+    /*attemptJump();*/
 }
 
 void loop()
 {
+    if(digitalRead(3))
+    {
+        attemptJump();
+    }
+
     updatePlayerPosition();
 
     drawEnvironment();

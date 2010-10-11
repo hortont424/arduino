@@ -100,7 +100,7 @@ def buildProject(progSources, config, libraries=[]):
         for path, dirs, files in os.walk(basePath):
             for filename in [os.path.abspath(os.path.join(path, filename)) for filename in files]:
                 if filename.endswith(".cpp"):
-                    if filename.endswith("Tone.cpp") or filename.endswith("WString.cpp") or filename.endswith("main.cpp"):
+                    if filename.endswith("Tone.cpp") or filename.endswith("main.cpp"):
                         continue
                     cppSources.append(filename)
                 elif filename.endswith(".c"):
