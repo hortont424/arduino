@@ -20,6 +20,8 @@ unsigned char clouds[8];
 unsigned char color_buffer[8][8];
 void addRandomCoin(char x);
 
+unsigned long frame = 0;
+
 typedef struct
 {
     char x, y;
@@ -88,6 +90,8 @@ void setupMap()
 
     jumpFlag = false;
     jumping = 0;
+    
+    frame = 0;
     
     coinCount = 0;
 
@@ -203,7 +207,7 @@ void drawCoins()
     {
         if(coins[i].alive)
         {
-            color_buffer[coins[i].x][coins[i].y] = 0xFC;
+            color_buffer[coins[i].x][coins[i].y] = (frame % 2) ? 0xFC : 0x48;//0x90;
         }
     }
 }
@@ -394,4 +398,6 @@ void loop()
     flushBuffer();
 
     delay(120);
+    
+    frame++;
 }
