@@ -10,9 +10,8 @@
 
 char findTop(unsigned char x);
 void setupMap();
-void attemptMoveForward();
-void attemptJump();
 
+volatile bool jumpFlag;
 unsigned char timeSinceGap = 0;
 char jumping = 0;
 char height = 1;
@@ -27,6 +26,11 @@ typedef struct
 
 pair player;
 
+void buttonJump()
+{
+    jumpFlag = true;
+}
+
 void setup()
 {
     // SPI Bus setup
@@ -40,12 +44,7 @@ void setup()
     pinMode(SLAVESELECT, OUTPUT);
 
     pinMode(2, INPUT);
-    digitalWrite(2, LOW);
-    //attachInterrupt(0, attemptMoveForward, FALLING);
-
-    pinMode(3, INPUT);
-    digitalWrite(3, LOW);
-    //attachInterrupt(1, attemptJump, FALLING);
+    attachInterrupt(1, buttonJump, FALLING);
 
     // Make sure the RGB matrix is deactivated
     digitalWrite(SLAVESELECT,HIGH);
@@ -127,9 +126,9 @@ char findTop(unsigned char x)
 void flushBuffer()
 {
     digitalWrite(SLAVESELECT, LOW);
-    for(int y = 7; y >= 0; y--)
+    for(int y = 0; y < 8; y++)
         for(int x = 7; x >= 0; x--)
-            SPI.transfer(color_buffer[x][y]);
+            SPI.transfer(color_buffer[y][x]);
     digitalWrite(SLAVESELECT, HIGH);
 }
 
@@ -167,7 +166,7 @@ void attemptJump()
 {
     char top = findTop(player.x);
 
-    if(random(10) == 0 && jumping == 0 && (player.y == top + 1))
+    if(jumping == 0 && (player.y == top + 1))
     {
         jumping = 3;
     }
@@ -231,8 +230,6 @@ void updatePlayerPosition()
 {
     //update locations
 
-    //attemptMoveForward();
-
     if(player.x > 3)
     {
         player.x = 3;
@@ -255,15 +252,19 @@ void updatePlayerPosition()
 
         setupMap();
     }
-
-    /*attemptJump();*/
 }
 
 void loop()
 {
-    if(digitalRead(3))
+    if(jumpFlag)
     {
+        jumpFlag = false;
         attemptJump();
+    }
+    
+    if(digitalRead(2) == LOW)
+    {
+        attemptMoveForward();
     }
 
     updatePlayerPosition();
@@ -273,5 +274,5 @@ void loop()
 
     flushBuffer();
 
-    delay(70);
+    delay(120);
 }
