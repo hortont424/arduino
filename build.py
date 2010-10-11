@@ -30,7 +30,9 @@ def pulseDTR(port):
 
 def loadConfiguration():
     def findArduino():
-        paths = ["/Applications/Arduino.app/Contents/Resources/Java"]
+        paths = ["/Applications/Arduino.app/Contents/Resources/Java",
+                 "/usr/share/arduino",
+                 "/usr/local/share/arduino"]
 
         for path in paths:
             if os.path.exists(path):
@@ -64,9 +66,16 @@ def buildProject(progSources, config, libraries=[]):
 
     corePath = os.path.join(config["ARDUINO_PATH"], "hardware", "arduino", "cores", "arduino")
     libsPath = os.path.join(config["ARDUINO_PATH"], "libraries")
+    
     downloaderPath = os.path.join(config["ARDUINO_PATH"], "hardware", "tools", "avr")
-    avrDudePath = os.path.join(downloaderPath, "bin", "avrdude")
-
+    if os.path.exists(downloaderPath):
+        avrDudePath = os.path.join(downloaderPath, "bin", "avrdude")
+        avrDudeConfigPath = os.path.join(downloaderPath, "etc", "avrdude.conf")
+    else:
+        downloaderPath = os.path.join(config["ARDUINO_PATH"], "hardware", "tools")
+        avrDudePath = os.path.join(downloaderPath, "avrdude")
+        avrDudeConfigPath = os.path.join(downloaderPath, "avrdude.conf")
+        
     includeFlags = "-I. -I{0}".format(corePath)
 
     for library in libraries:
@@ -90,7 +99,7 @@ def buildProject(progSources, config, libraries=[]):
 
     avrDudeFlags = []
     avrDudeFlags.append("-V -F")
-    avrDudeFlags.append("-C {0}".format(os.path.join(downloaderPath, "etc", "avrdude.conf")))
+    avrDudeFlags.append("-C {0}".format(avrDudeConfigPath))
     avrDudeFlags.append("-p {0}".format(config["CPU"]))
     avrDudeFlags.append("-P {0}".format(config["SERIAL_PORT"]))
     avrDudeFlags.append("-c {0}".format(config["PROGRAMMER"]))
