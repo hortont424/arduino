@@ -18,13 +18,22 @@ char height = 1;
 unsigned char environment[8];
 unsigned char clouds[8];
 unsigned char color_buffer[8][8];
+void addRandomCoin(char x);
 
 typedef struct
 {
     char x, y;
-} pair;
+} _player;
 
-pair player;
+_player player;
+
+typedef struct
+{
+    char x, y;
+    bool alive;
+} _coin;
+
+_coin coins[4];
 
 void buttonJump()
 {
@@ -74,6 +83,15 @@ void setupMap()
 
     player.x = 1;
     player.y = findTop(player.x) + 1;
+
+    jumpFlag = false;
+    jumping = 0;
+
+    for(int i = 0; i < 4; i++)
+    {
+        coins[i].alive = false;
+        addRandomCoin(2 + i);
+    }
 }
 
 void shiftWorldRight()
@@ -110,6 +128,18 @@ void shiftWorldRight()
 
     if(height > 3)
         height = 3;
+    
+    // update coins, maybe add a new one
+    
+    for(int i = 0; i < 4; i++)
+    {
+        coins[i].x--;
+        
+        if(coins[i].x < 0)
+            coins[i].alive = false;
+    }
+    
+    addRandomCoin(7);
 }
 
 char findTop(unsigned char x)
@@ -121,6 +151,44 @@ char findTop(unsigned char x)
     }
 
     return -1;
+}
+
+int aliveCoinCount()
+{
+    char aliveCoins = 0;
+    
+    for(int i = 0; i < 4; i++)
+    {
+        if(coins[i].alive)
+            aliveCoins++;
+    }
+    
+    return aliveCoins;
+}
+
+void addRandomCoin(char x)
+{
+    char top = findTop(x);
+    char y = random(top + 2, top + 5);
+    
+    if(top == -1)
+        return;
+    
+    if(random(15) != 0)
+        return;
+    
+    for(int i = 0; i < 4; i++)
+    {
+        if(!coins[i].alive)
+        {
+            // make coin
+            coins[i].x = x;
+            coins[i].y = y;
+            coins[i].alive = true;
+            
+            return;
+        }
+    }
 }
 
 void flushBuffer()
@@ -136,6 +204,17 @@ void drawPlayer()
 {
     if(player.y < 8)
         color_buffer[player.x][player.y] = 0xE0;
+}
+
+void drawCoins()
+{
+    for(int i = 0; i < 4; i++)
+    {
+        if(coins[i].alive)
+        {
+            color_buffer[coins[i].x][coins[i].y] = 0xFC;
+        }
+    }
 }
 
 void drawEnvironment()
@@ -254,6 +333,22 @@ void updatePlayerPosition()
     }
 }
 
+void collectCoins()
+{
+    for(int i = 0; i < 4; i++)
+    {
+        if(!coins[i].alive)
+            continue;
+        
+        if(coins[i].x == player.x && coins[i].y == player.y)
+        {
+            // got a coin!!
+            
+            coins[i].alive = false;
+        }
+    }
+}
+
 void loop()
 {
     if(jumpFlag)
@@ -268,8 +363,11 @@ void loop()
     }
 
     updatePlayerPosition();
+    
+    collectCoins();
 
     drawEnvironment();
+    drawCoins();
     drawPlayer();
 
     flushBuffer();
