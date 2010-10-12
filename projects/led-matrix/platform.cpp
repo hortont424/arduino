@@ -4,12 +4,19 @@
 #include <SPI.h>
 
 #define DATAOUT 11 // MOSI
-#define DATAIN 12 // MISO
 #define SPICLOCK 13 // SCLK
 #define SLAVESELECT 10 // CS
 
+#define RIGHT_BUTTON 2 // digital pin 2: momentary switch + pullup
+#define JUMP_INTERRUPT 1 // digital pin 3 (interrupt 1): momentary switch + pullup 
+#define LEFT_BUTTON 4 // digital pin 4: momentary switch + pullup
+
+#define SPEED_POT 0 // analog pin 1: 0-5V across 100K pot
+
 char findTop(unsigned char x);
 void setupMap();
+void addRandomCoin(char x);
+void addRandomEnemy(char x);
 
 volatile bool jumpFlag;
 unsigned char timeSinceGap = 0;
@@ -18,8 +25,6 @@ char height = 1;
 unsigned char environment[8];
 unsigned char clouds[8];
 unsigned char color_buffer[8][8];
-void addRandomCoin(char x);
-
 unsigned long frame = 0;
 
 typedef struct
@@ -39,6 +44,15 @@ _coin coins[4];
 
 char coinCount;
 
+typedef struct
+{
+    char x;
+    bool alive;
+    char direction;
+} _enemy;
+
+_enemy enemies[2];
+
 void buttonJump()
 {
     jumpFlag = true;
@@ -52,18 +66,15 @@ void setup()
 
     // Set the pin modes for the RGB matrix
     pinMode(DATAOUT, OUTPUT);
-    pinMode(DATAIN, INPUT);
     pinMode(SPICLOCK, OUTPUT);
     pinMode(SLAVESELECT, OUTPUT);
 
-    pinMode(2, INPUT);
-    pinMode(4, INPUT);
-    attachInterrupt(1, buttonJump, FALLING);
+    pinMode(RIGHT_BUTTON, INPUT);
+    pinMode(LEFT_BUTTON, INPUT);
+    attachInterrupt(JUMP_INTERRUPT, buttonJump, FALLING);
 
     // Make sure the RGB matrix is deactivated
-    digitalWrite(SLAVESELECT,HIGH);
-
-    delay(100);
+    digitalWrite(SLAVESELECT, HIGH);
 
     digitalWrite(SLAVESELECT, LOW);
     delay(10);
@@ -81,11 +92,14 @@ void setupMap()
     for(int i = 0; i < 8; i++)
     {
         environment[i] = 0x00;
+        clouds[i] = 0x00;
     }
 
     for(int i = 0; i <= height; i++)
+    {
         environment[i] = 0xFF;
-
+    }
+    
     player.x = 1;
     player.y = findTop(player.x) + 1;
 
@@ -100,6 +114,11 @@ void setupMap()
     {
         coins[i].alive = false;
         addRandomCoin(2 + i);
+    }
+    
+    for(int i = 0; i < 2; i++)
+    {
+        enemies[i].alive = false;
     }
 }
 
@@ -130,13 +149,19 @@ void shiftWorldRight()
     clouds[6] |= (random(10) == 0) << 7;
 
     if(random(5) == 2)
+    {
         height += random(2) ? 1 : -1;
-
+    }
+    
     if(height < 0)
+    {
         height = 0;
-
+    }
+    
     if(height > 3)
+    {
         height = 3;
+    }
     
     // update coins, maybe add a new one
     
@@ -145,10 +170,26 @@ void shiftWorldRight()
         coins[i].x--;
         
         if(coins[i].x < 0)
+        {
             coins[i].alive = false;
+        }
     }
     
     addRandomCoin(7);
+    
+    // update enemies, maybe add a new one
+    
+    for(int i = 0; i < 2; i++)
+    {
+        enemies[i].x--;
+        
+        if(enemies[i].x < 0)
+        {
+            enemies[i].alive = false;
+        }
+    }
+    
+    addRandomEnemy(7);
 }
 
 char findTop(unsigned char x)
@@ -168,10 +209,14 @@ void addRandomCoin(char x)
     char y = random(top + 2, top + 5);
     
     if(top == -1)
+    {
         return;
+    }
     
     if(random(15) != 0)
+    {
         return;
+    }
     
     for(int i = 0; i < 4; i++)
     {
@@ -187,19 +232,55 @@ void addRandomCoin(char x)
     }
 }
 
+void addRandomEnemy(char x)
+{
+    char top = findTop(x);
+    
+    if(top == -1)
+    {
+        return;
+    }
+    
+    if(random(15) != 0)
+    {
+        return;
+    }
+    
+    for(int i = 0; i < 4; i++)
+    {
+        if(!enemies[i].alive)
+        {
+            // make enemy
+            enemies[i].x = x;
+            enemies[i].alive = true;
+            enemies[i].direction = random(2) ? 1 : -1;
+            
+            return;
+        }
+    }
+}
+
 void flushBuffer()
 {
     digitalWrite(SLAVESELECT, LOW);
+    
     for(int y = 0; y < 8; y++)
+    {
         for(int x = 7; x >= 0; x--)
+        {
             SPI.transfer(color_buffer[y][x]);
+        }
+    }
+    
     digitalWrite(SLAVESELECT, HIGH);
 }
 
 void drawPlayer()
 {
     if(player.y < 8)
+    {
         color_buffer[player.x][player.y] = 0xE0;
+    }
 }
 
 void drawCoins()
@@ -208,7 +289,18 @@ void drawCoins()
     {
         if(coins[i].alive)
         {
-            color_buffer[coins[i].x][coins[i].y] = (frame % 2) ? 0xFC : 0x48;//0x90;
+            color_buffer[coins[i].x][coins[i].y] = (frame % 2) ? 0xFC : 0x48;
+        }
+    }
+}
+
+void drawEnemies()
+{
+    for(int i = 0; i < 2; i++)
+    {
+        if(enemies[i].alive)
+        {
+            color_buffer[enemies[i].x][findTop(enemies[i].x) + 1] = 0x03;
         }
     }
 }
@@ -262,8 +354,10 @@ void showCoinCount()
     char tempCoinCount = coinCount;
     
     if(!tempCoinCount)
+    {
         return;
-
+    }
+    
     for(int y = 0; y < 8; y++)
     {
         for(int x = 0; x < 8; x++)
@@ -352,13 +446,17 @@ void updatePlayerPosition()
     player.y += (jumping ? 1 : -1);
 
     if(jumping > 0)
+    {
         jumping--;
-
+    }
+    
     char top = findTop(player.x);
 
     if(player.y < top + 1 && top != -1)
+    {
         player.y = top + 1;
-
+    }
+    
     if(player.y == 0 && top == -1)
     {
         deathSequence();
@@ -372,13 +470,41 @@ void collectCoins()
     for(int i = 0; i < 4; i++)
     {
         if(!coins[i].alive)
+        {
             continue;
+        }
         
         if(coins[i].x == player.x && coins[i].y == player.y)
         {
             // got a coin!!
             coinCount++;
             coins[i].alive = false;
+        }
+    }
+}
+
+void updateEnemiesPositions()
+{
+    for(int i = 0; i < 2; i++)
+    {
+        if(!enemies[i].alive)
+        {
+            continue;
+        }
+        
+        if(findTop(enemies[i].x + enemies[i].direction) == findTop(enemies[i].x))
+        {
+            enemies[i].x += enemies[i].direction * (frame % 10 == 0);
+            
+            if(enemies[i].x < 0)
+            {
+                enemies[i].x = 0;
+                enemies[i].direction = -enemies[i].direction;
+            }
+        }
+        else
+        {
+            enemies[i].direction = -enemies[i].direction;
         }
     }
 }
@@ -391,26 +517,28 @@ void loop()
         attemptJump();
     }
     
-    if(digitalRead(2) == LOW)
+    if(!digitalRead(RIGHT_BUTTON))
     {
         attemptMoveForward();
     }
-    else if(digitalRead(4) == LOW)
+    else if(!digitalRead(LEFT_BUTTON))
     {
         attemptMoveBackwards();
     }
 
     updatePlayerPosition();
+    updateEnemiesPositions();
     
     collectCoins();
 
     drawEnvironment();
     drawCoins();
+    drawEnemies();
     drawPlayer();
 
     flushBuffer();
 
-    delay(analogRead(0) / 10);
+    delay(analogRead(SPEED_POT) / 10);
     
     frame++;
 }
