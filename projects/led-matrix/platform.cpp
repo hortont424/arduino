@@ -17,6 +17,7 @@ char findTop(unsigned char x);
 void setupMap();
 void addRandomCoin(char x);
 void addRandomEnemy(char x);
+void tryToKillEnemies();
 
 volatile bool jumpFlag;
 unsigned char timeSinceGap = 0;
@@ -458,6 +459,10 @@ void updatePlayerPosition()
     {
         player.y = top + 1;
     }
+    else
+    {
+        tryToKillEnemies();
+    }
     
     if(player.y == 0 && top == -1)
     {
@@ -479,6 +484,23 @@ void collectCoins()
             // got a coin!!
             coinCount++;
             coins[i].alive = false;
+        }
+    }
+}
+
+void tryToKillEnemies()
+{
+    for(int i = 0; i < 2; i++)
+    {
+        if(!enemies[i].alive)
+        {
+            continue;
+        }
+        
+        if(enemies[i].x == player.x && findTop(enemies[i].x) + 1 == player.y)
+        {
+            // killed one!
+            enemies[i].alive = false;
         }
     }
 }
