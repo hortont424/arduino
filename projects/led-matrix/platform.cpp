@@ -431,6 +431,8 @@ void deathSequence()
     }
     
     showCoinCount();
+    
+    setupMap();
 }
 
 void updatePlayerPosition()
@@ -460,8 +462,6 @@ void updatePlayerPosition()
     if(player.y == 0 && top == -1)
     {
         deathSequence();
-
-        setupMap();
     }
 }
 
@@ -479,6 +479,22 @@ void collectCoins()
             // got a coin!!
             coinCount++;
             coins[i].alive = false;
+        }
+    }
+}
+
+void dieFromEnemies()
+{
+    for(int i = 0; i < 2; i++)
+    {
+        if(!enemies[i].alive)
+        {
+            continue;
+        }
+        
+        if(enemies[i].x == player.x && findTop(enemies[i].x) + 1 == player.y)
+        {
+            deathSequence();
         }
     }
 }
@@ -530,6 +546,7 @@ void loop()
     updateEnemiesPositions();
     
     collectCoins();
+    dieFromEnemies();
 
     drawEnvironment();
     drawCoins();
