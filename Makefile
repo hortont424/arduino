@@ -1,7 +1,7 @@
 .PHONY: all clean
 
 all:
-	python ./build.py projects/led-matrix/random-colors.cpp
+	python ./build.py projects/recorder/recorder.cpp
 
 clean:
 	rm -rf .out/

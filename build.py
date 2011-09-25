@@ -101,9 +101,7 @@ def buildProject(progSources, config, libraries=[]):
     avrDudeFlags.append("-V -F")
     avrDudeFlags.append("-C {0}".format(avrDudeConfigPath))
     avrDudeFlags.append("-p {0}".format(config["CPU"]))
-    avrDudeFlags.append("-P {0}".format(config["SERIAL_PORT"]))
     avrDudeFlags.append("-c {0}".format(config["PROGRAMMER"]))
-    avrDudeFlags.append("-b {0}".format(config["SERIAL_RATE"]))
 
     for basePath in [corePath] + [os.path.join(libsPath, library) for library in libraries]:
         for path, dirs, files in os.walk(basePath):
@@ -137,7 +135,7 @@ def buildProject(progSources, config, libraries=[]):
 
     os.system("avr-objcopy -O ihex -R .eeprom .build/out.elf .build/out.hex")
 
-    pulseDTR(config["SERIAL_PORT"])
+    #pulseDTR(config["SERIAL_PORT"])
     os.system("{0} {1} -U flash:w:.build/out.hex".format(avrDudePath, " ".join(avrDudeFlags)))
 
 buildProject([sys.argv[1]], loadConfiguration())
